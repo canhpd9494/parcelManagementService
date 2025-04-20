@@ -2,33 +2,28 @@ import com.service.parcelmanagement.app.parcelmanagement.ParcelCreateDto;
 import com.service.parcelmanagement.app.parcelmanagement.ParcelCreateResponseDto;
 import com.service.parcelmanagement.app.parcelmanagement.ParcelQueryDto;
 import com.service.parcelmanagement.app.parcelmanagement.ParcelRequestMapper;
-import com.service.parcelmanagement.domain.guestsmanagement.guest.Guest;
 import com.service.parcelmanagement.domain.parcelmanagement.ParcelRequestCreateCommand;
 import com.service.parcelmanagement.domain.parcelmanagement.ParcelRequestDomainService;
+import com.service.parcelmanagement.domain.guestsmanagement.guest.Guest;
 import com.service.parcelmanagement.domain.parcelmanagement.parcel.Parcel;
-import com.service.parcelmanagement.domain.parcelmanagement.parcel.ParcelStatus;
 import com.service.parcelmanagement.infra.parcelmanagement.ParcelRequestApplicationServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-/**
- * This test class assumes you have a ParcelRequestApplicationServiceImpl class that implements
- * ParcelRequestApplicationService interface. Adjust the class name if needed.
- */
 @ExtendWith(MockitoExtension.class)
 public class ParcelRequestApplicationServiceImplTest {
 
@@ -38,96 +33,109 @@ public class ParcelRequestApplicationServiceImplTest {
     @Mock
     private ParcelRequestMapper mapper;
 
-    // Replace with your actual implementation class name
     @InjectMocks
     private ParcelRequestApplicationServiceImpl applicationService;
 
-    @Captor
-    private ArgumentCaptor<ParcelRequestCreateCommand> commandCaptor;
-
     private ParcelCreateDto createDto;
     private Parcel parcel;
-    private Guest guest;
-    private LocalDate now;
+    private ParcelCreateResponseDto responseDto;
+    private ParcelRequestCreateCommand command;
+    private List<Parcel> parcelList;
+    private List<ParcelQueryDto> parcelQueryDtoList;
+    private LocalDate testDate;
 
     @BeforeEach
-    public void setup() {
-        now = LocalDate.now();
+    void setUp() {
+        testDate = LocalDate.of(2025, 4, 20);
 
-        // Setup test DTO
+        // Setup ParcelCreateDto
         createDto = new ParcelCreateDto();
         createDto.setGuestId(1);
-        createDto.setReceivedDate(now);
-        createDto.setDescription("Test parcel");
+        createDto.setReceivedDate(testDate);
+        createDto.setDescription("Test package");
 
-        // Setup test guest
-        guest = new Guest();
-        guest.setGuestId(1);
-
-        // Setup test parcel
+        // Setup Parcel
         parcel = new Parcel();
         parcel.setParcelId(1);
+        Guest guest = new Guest();
+        guest.setGuestId(1);
         parcel.setGuest(guest);
-        parcel.setReceivedDate(now);
-        parcel.setStatus(ParcelStatus.PENDING.getCode());
-        parcel.setDescription("Test parcel");
-    }
+        parcel.setReceivedDate(testDate);
+        parcel.setStatus("P");
+        parcel.setDescription("Test package");
 
-    @Test
-    public void findParcels_ShouldReturnMappedParcels() {
-        // Arrange
-        List<Parcel> parcels = Collections.singletonList(parcel);
+        // Setup command
+        command = new ParcelRequestCreateCommand(1, testDate, "Test package");
+
+        // Setup ResponseDto
+        responseDto = new ParcelCreateResponseDto(1, 1, testDate, "PENDING", "Test package");
+
+        // Setup Lists
+        parcelList = new ArrayList<>();
+        parcelList.add(parcel);
+
+        parcelQueryDtoList = new ArrayList<>();
         ParcelQueryDto queryDto = new ParcelQueryDto();
         queryDto.setId(1);
-
-        when(domainService.findParcels(1, 2, now, null, "P"))
-                .thenReturn(parcels);
-        when(mapper.map(parcels)).thenReturn(Collections.singletonList(queryDto));
-
-        // Act
-        List<ParcelQueryDto> result = applicationService.findParcels(1, 2, now, null, "P");
-
-        // Assert
-        assertEquals(1, result.size());
-        verify(domainService).findParcels(1, 2, now, null, "P");
-        verify(mapper).map(parcels);
+        queryDto.setGuestId(1);
+        queryDto.setReceivedDate(testDate);
+        queryDto.setStatus("PENDING");
+        queryDto.setDescription("Test package");
+        parcelQueryDtoList.add(queryDto);
     }
 
     @Test
-    public void createParcel_ShouldMapDtoAndCallDomainService() {
+    void testFindParcels() {
         // Arrange
-        ParcelRequestCreateCommand command = new ParcelRequestCreateCommand(1, now, "Test parcel");
-        ParcelCreateResponseDto responseDto = new ParcelCreateResponseDto(1, 1, now, "PENDING", "Test parcel");
+        Integer id = 1;
+        Integer guestId = 1;
+        String status = "P";
+        when(domainService.findParcels(eq(id), eq(guestId), eq(testDate), eq(null), eq(status)))
+                .thenReturn(parcelList);
+        when(mapper.map(parcelList)).thenReturn(parcelQueryDtoList);
 
+        // Act
+        List<ParcelQueryDto> result = applicationService.findParcels(id, guestId, testDate, null, status);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(id, result.get(0).getId());
+        verify(domainService).findParcels(id, guestId, testDate, null, status);
+        verify(mapper).map(parcelList);
+    }
+
+    @Test
+    void testCreateParcel() {
+        // Arrange
         when(mapper.map(createDto)).thenReturn(command);
-        when(domainService.createParcel(any(ParcelRequestCreateCommand.class))).thenReturn(parcel);
+        when(domainService.createParcel(command)).thenReturn(parcel);
         when(mapper.map(parcel)).thenReturn(responseDto);
 
         // Act
         ParcelCreateResponseDto result = applicationService.createParcel(createDto);
 
         // Assert
-        verify(mapper).map(createDto);
-        verify(domainService).createParcel(commandCaptor.capture());
-        verify(mapper).map(parcel);
-
-        ParcelRequestCreateCommand capturedCommand = commandCaptor.getValue();
-        assertEquals(1, capturedCommand.getGuestId());
-        assertEquals(now, capturedCommand.getReceivedDate());
-        assertEquals("Test parcel", capturedCommand.getDescription());
-
+        assertNotNull(result);
         assertEquals(1, result.getParcelId());
         assertEquals(1, result.getGuestId());
-        assertEquals(now, result.getReceivedDate());
+        assertEquals(testDate, result.getReceivedDate());
         assertEquals("PENDING", result.getStatus());
+        assertEquals("Test package", result.getDescription());
+        verify(mapper).map(createDto);
+        verify(domainService).createParcel(command);
+        verify(mapper).map(parcel);
     }
 
     @Test
-    public void pickupParcel_ShouldCallDomainService() {
+    void testPickupParcel() {
+        // Arrange
+        Integer parcelId = 1;
+
         // Act
-        applicationService.pickupParcel(1);
+        applicationService.pickupParcel(parcelId);
 
         // Assert
-        verify(domainService).pickupParcel(1);
+        verify(domainService).pickupParcel(parcelId);
     }
 }
