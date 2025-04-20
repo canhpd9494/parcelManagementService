@@ -1,7 +1,7 @@
 package com.service.parcelmanagement.domain.guestsmanagement.guest;
 
 public enum GuestStatus {
-    BOOKING("B"),
+    BOOKED("B"),
     CHECKIN("I"),
     CHECKOUT("O");
 

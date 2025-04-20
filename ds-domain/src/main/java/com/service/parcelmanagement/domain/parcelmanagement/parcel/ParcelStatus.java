@@ -2,7 +2,7 @@ package com.service.parcelmanagement.domain.parcelmanagement.parcel;
 
 public enum ParcelStatus {
     PENDING("P"),
-    COMPLETE("C");
+    COMPLETED("C");
 
     private final String code;
 

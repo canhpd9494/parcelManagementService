@@ -38,7 +38,7 @@ public class ParcelRequestDomainService {
 
     public void pickupParcel(Integer parcelId) {
         Parcel parcel = repository.findByParcelId(parcelId).get(0);
-        parcel.setStatus(ParcelStatus.COMPLETE.getCode());
+        parcel.setStatus(ParcelStatus.COMPLETED.getCode());
         parcel.setPickupDate(LocalDate.now());
         repository.save(parcel);
     }

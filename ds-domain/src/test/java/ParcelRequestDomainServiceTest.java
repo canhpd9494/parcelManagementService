@@ -128,7 +128,7 @@ public class ParcelRequestDomainServiceTest {
         verify(parcelRepository).save(parcelCaptor.capture());
         Parcel updatedParcel = parcelCaptor.getValue();
 
-        assertEquals(ParcelStatus.COMPLETE.getCode(), updatedParcel.getStatus());
+        assertEquals(ParcelStatus.COMPLETED.getCode(), updatedParcel.getStatus());
         assertNotNull(updatedParcel.getPickupDate());
     }
 }
